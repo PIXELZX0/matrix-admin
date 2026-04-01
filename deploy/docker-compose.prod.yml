@@ -10,3 +10,9 @@ services:
       PORT: ${PORT:-8787}
     ports:
       - 127.0.0.1:${APP_PORT:-8787}:8787
+    volumes:
+      - matrix-admin-data:/data
+
+volumes:
+  matrix-admin-data:
+    name: ${DATA_VOLUME_NAME:-matrix-admin-data}

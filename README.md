@@ -44,7 +44,10 @@ cp deploy/docker-compose.prod.yml .deploy/docker-compose.yml
 cp deploy/.env.production.example .deploy/.env
 ```
 
-Update `.deploy/.env` with your real production values (especially `PUBLIC_BASE_URL` and `SESSION_SECRET`), then run:
+Update `.deploy/.env` with your real production values (especially `PUBLIC_BASE_URL` and `SESSION_SECRET`).
+You can also set `DATA_VOLUME_NAME` (default: `matrix-admin-data`) to control the Docker named volume mounted at `/data`.
+
+Then run:
 
 ```bash
 cd .deploy
@@ -59,6 +62,7 @@ IMAGE_NAME=yuchanshin/matrix-admin IMAGE_TAG=latest docker compose pull
 IMAGE_NAME=yuchanshin/matrix-admin IMAGE_TAG=latest docker compose up -d --remove-orphans
 docker compose logs -f
 docker compose down
+docker volume inspect matrix-admin-data # or your DATA_VOLUME_NAME value
 ```
 
 ## CI/CD
