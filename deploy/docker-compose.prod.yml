@@ -6,10 +6,11 @@ services:
     env_file:
       - .env
     environment:
+      FRONTEND_PORT: ${FRONTEND_PORT:-5173}
       PORT: ${PORT:-8787}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
-      - 127.0.0.1:${APP_PORT:-8787}:8787
+      - 127.0.0.1:${APP_PORT:-5173}:${FRONTEND_PORT:-5173}
     volumes:
       - matrix-admin-data:/data
 

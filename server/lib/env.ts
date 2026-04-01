@@ -29,6 +29,7 @@ export const env = {
   ACCESS_GATE_MODE: accessGateMode,
   ALLOW_PRIVATE_TARGETS: toBoolean(process.env.ALLOW_PRIVATE_TARGETS, true),
   COOKIE_NAME: "matrix_admin_session",
+  HOST: process.env.HOST ?? "127.0.0.1",
   MAX_JSON_BYTES: toNumber(process.env.MAX_JSON_BYTES, 2 * 1024 * 1024),
   MAX_MEDIA_BYTES: toNumber(process.env.MAX_MEDIA_BYTES, 50 * 1024 * 1024),
   NODE_ENV: nodeEnv,

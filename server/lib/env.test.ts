@@ -34,4 +34,10 @@ describe("environment config", () => {
 
     expect(env.ACCESS_GATE_MODE).toBe("trusted-header");
   });
+
+  it("binds server host to localhost by default", async () => {
+    const { env } = await import("./env");
+
+    expect(env.HOST).toBe("127.0.0.1");
+  });
 });

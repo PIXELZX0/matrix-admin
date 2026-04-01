@@ -13,7 +13,7 @@ pnpm dev
 This starts:
 
 - Vite frontend on `http://localhost:5173`
-- Hono BFF on `http://localhost:8787`
+- Internal Hono BFF on `127.0.0.1:8787` (not exposed externally)
 
 The Vite dev server proxies `/api/*` requests to the Hono server.
 
@@ -24,14 +24,22 @@ pnpm build
 pnpm start
 ```
 
+`pnpm start` runs:
+
+- Vite preview on `0.0.0.0:${FRONTEND_PORT:-5173}` (externally exposed)
+- Hono BFF on `127.0.0.1:${PORT:-8787}` (internal only)
+
+The frontend server proxies `/api/*` and `/healthz` to the internal Hono BFF.
+
 ## Docker
 
 ```bash
 docker build -t matrix-admin .
-docker run --rm -p 8787:8787 --env-file .env matrix-admin
+docker run --rm -p 5173:5173 --env-file .env matrix-admin
 ```
 
-The container serves the Vite build and the Hono server together on `8787`.
+The container only exposes the Vite frontend port (`5173` by default).
+Hono BFF stays internal and is reached via frontend proxy.
 
 ## Docker Compose
 
@@ -87,7 +95,7 @@ GitHub Actions workflow: [`.github/workflows/docker-cicd.yml`](.github/workflows
 
 `PROD_ENV_FILE` should contain the contents of your production `.env`. You can start from [`deploy/.env.production.example`](deploy/.env.production.example).
 
-The production compose file binds the app to `127.0.0.1:${APP_PORT}` by default so it stays behind your external access gate or reverse proxy.
+The production compose file binds the frontend to `127.0.0.1:${APP_PORT}` by default so it stays behind your external access gate or reverse proxy.
 
 ## Required environment variables
 
@@ -95,6 +103,11 @@ The production compose file binds the app to `127.0.0.1:${APP_PORT}` by default 
 - `PUBLIC_BASE_URL`
 - `ALLOW_PRIVATE_TARGETS`
 - `SESSION_TTL_HOURS`
+
+## Optional runtime ports
+
+- `FRONTEND_PORT` (default: `5173`) - exposed Vite frontend port
+- `PORT` (default: `8787`) - internal Hono BFF port
 
 Access gate is disabled by default (`ACCESS_GATE_MODE=disabled`), so requests are handled by the app's own session login.
 If you want to enforce an upstream gate later, set `ACCESS_GATE_MODE=trusted-header` and optionally `ACCESS_GATE_HEADER_NAME` (default: `x-authenticated-user-email`).
