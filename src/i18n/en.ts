@@ -7,6 +7,7 @@ const en: SynapseTranslationMessages = {
   synapseadmin: {
     auth: {
       base_url: "Homeserver URL",
+      user_id: "User ID",
       welcome: "Welcome to Synapse-admin",
       server_version: "Synapse version",
       supports_specs: "supports Matrix specs",

@@ -4,6 +4,7 @@ interface SynapseTranslationMessages extends TranslationMessages {
   synapseadmin: {
     auth: {
       base_url: string;
+      user_id: string;
       welcome: string;
       server_version: string;
       supports_specs?: string; // TODO: fa, fr, it, zh

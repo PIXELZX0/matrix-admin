@@ -67,9 +67,29 @@ const preferredBaseUrlKey = "preferred_base_url";
 const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult | null) => void }) => {
   const form = useFormContext();
   const translate = useTranslate();
-  const username = useWatch({ control: form.control, name: "username" });
+  const userId = useWatch({ control: form.control, name: "user_id" });
   const baseUrl = useWatch({ control: form.control, name: "base_url" });
   const [discoveryError, setDiscoveryError] = useState<string>("");
+  const validateBaseUrl = [
+    required(),
+    (value: unknown) => {
+      if (typeof value !== "string" || value.length === 0) {
+        return undefined;
+      }
+
+      return isValidBaseUrl(value) ? undefined : translate("synapseadmin.auth.url_error");
+    },
+  ];
+  const validateUserId = [
+    required(),
+    (value: unknown) => {
+      if (typeof value !== "string" || value.length === 0) {
+        return undefined;
+      }
+
+      return splitMxid(value) ? undefined : translate("synapseadmin.auth.username_error");
+    },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -110,7 +130,7 @@ const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult 
         return;
       }
 
-      const domain = splitMxid(username)?.domain;
+      const domain = splitMxid(userId)?.domain;
       if (!domain) {
         return;
       }
@@ -130,13 +150,20 @@ const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult 
     return () => {
       active = false;
     };
-  }, [baseUrl, form, username]);
+  }, [baseUrl, form, userId]);
 
   return (
     <>
-      <TextInput autoFocus label="ra.auth.username" resettable source="username" validate={required()} />
-      <PasswordInput label="ra.auth.password" resettable source="password" validate={required()} />
-      <TextInput label="synapseadmin.auth.base_url" resettable source="base_url" validate={required()} />
+      <TextInput
+        autoComplete="url"
+        autoFocus
+        label="synapseadmin.auth.base_url"
+        resettable
+        source="base_url"
+        validate={validateBaseUrl}
+      />
+      <TextInput autoComplete="username" label="synapseadmin.auth.user_id" resettable source="user_id" validate={validateUserId} />
+      <PasswordInput autoComplete="current-password" label="ra.auth.password" resettable source="password" validate={required()} />
       {discoveryError ? (
         <Typography className="meta" color="error">
           {discoveryError}
@@ -169,7 +196,7 @@ const LoginPage = () => {
     login({
       baseUrl: values.base_url ?? "",
       password: values.password ?? "",
-      username: values.username ?? "",
+      username: values.user_id ?? "",
     }).catch(error => {
       setLoading(false);
       notify(error instanceof Error ? error.message : "Login failed.", { type: "warning" });
