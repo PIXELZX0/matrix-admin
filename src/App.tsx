@@ -17,6 +17,7 @@ import userMediaStats from "./resources/user_media_statistics";
 import users from "./resources/users";
 import authProvider from "./synapse/authProvider";
 import dataProvider from "./synapse/dataProvider";
+import { modernBlackTheme } from "./theme";
 
 const Route = import.meta.env.MODE === "test" ? reactRouterProvider.Route : ReactRouterDomRoute;
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
     loginPage={LoginPage}
     queryClient={queryClient}
     requireAuth
+    theme={modernBlackTheme}
   >
     <CustomRoutes>
       <Route

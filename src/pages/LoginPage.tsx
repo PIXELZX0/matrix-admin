@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import LockIcon from "@mui/icons-material/Lock";
-import { Avatar, Box, Button, Card, CardActions, CircularProgress, Typography } from "@mui/material";
+import { Avatar, Box, Button, Card, CircularProgress, Divider, Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
   Form,
@@ -20,49 +20,73 @@ import type { DiscoveryResult } from "@shared/matrix";
 import storage from "../storage";
 import { discoverHomeserver, getWellKnownUrl, isValidBaseUrl, splitMxid } from "../synapse/synapse";
 
-const FormBox = styled(Box)(({ theme }) => ({
+const LoginShell = styled(Box)(({ theme }) => ({
   alignItems: "center",
-  background: "url(/images/floating-cogs.svg)",
-  backgroundColor: "#f9f9f9",
-  backgroundRepeat: "no-repeat",
-  backgroundSize: "cover",
   display: "flex",
-  flexDirection: "column",
-  justifyContent: "flex-start",
-  minHeight: "calc(100vh - 1rem)",
-  [`& .actions`]: {
-    padding: "0 1rem 1rem 1rem",
+  justifyContent: "center",
+  minHeight: "100vh",
+  overflow: "hidden",
+  padding: theme.spacing(2),
+  position: "relative",
+  width: "100%",
+  "&::before": {
+    background:
+      "radial-gradient(circle at center, rgba(255,255,255,0.2), rgba(255,255,255,0) 68%)",
+    content: '""',
+    height: "26rem",
+    left: "50%",
+    pointerEvents: "none",
+    position: "absolute",
+    top: "-12rem",
+    transform: "translateX(-50%)",
+    width: "26rem",
   },
-  [`& .avatar`]: {
-    display: "flex",
-    justifyContent: "center",
-    margin: "1rem",
-  },
-  [`& .card`]: {
-    marginBottom: "6rem",
-    marginTop: "6rem",
-    width: "32rem",
-  },
-  [`& .hint`]: {
-    color: theme.palette.grey[600],
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "1em",
-    marginTop: "1em",
-  },
-  [`& .icon`]: {
-    backgroundColor: theme.palette.grey[500],
-  },
-  [`& .meta`]: {
-    color: theme.palette.grey[500],
-    marginBottom: "0.5rem",
-  },
-  [`& .form`]: {
-    padding: "0 1rem 1rem 1rem",
+  "&::after": {
+    background:
+      "radial-gradient(circle at center, rgba(255,255,255,0.14), rgba(255,255,255,0) 70%)",
+    bottom: "-10rem",
+    content: '""',
+    height: "20rem",
+    pointerEvents: "none",
+    position: "absolute",
+    right: "-7rem",
+    width: "20rem",
   },
 }));
 
+const LoginCard = styled(Card)(({ theme }) => ({
+  "@keyframes loginCardRise": {
+    from: {
+      opacity: 0,
+      transform: "translateY(18px) scale(0.98)",
+    },
+    to: {
+      opacity: 1,
+      transform: "translateY(0) scale(1)",
+    },
+  },
+  animation: "loginCardRise 420ms ease-out",
+  backdropFilter: "blur(14px)",
+  border: `1px solid ${theme.palette.divider}`,
+  borderRadius: theme.spacing(2),
+  boxShadow: "0 24px 70px rgba(0, 0, 0, 0.45)",
+  maxWidth: "30rem",
+  width: "100%",
+  zIndex: 1,
+}));
+
 const preferredBaseUrlKey = "preferred_base_url";
+const inputSx = {
+  mb: 1,
+  "& .MuiInputBase-root": {
+    transition: "all 140ms ease",
+  },
+};
+const metaTextSx = {
+  color: "text.secondary",
+  fontSize: "0.83rem",
+  lineHeight: 1.5,
+};
 
 const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult | null) => void }) => {
   const form = useFormContext();
@@ -160,17 +184,34 @@ const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult 
         label="synapseadmin.auth.base_url"
         resettable
         source="base_url"
+        sx={inputSx}
         validate={validateBaseUrl}
       />
-      <TextInput autoComplete="username" label="synapseadmin.auth.user_id" resettable source="user_id" validate={validateUserId} />
-      <PasswordInput autoComplete="current-password" label="ra.auth.password" resettable source="password" validate={required()} />
+      <TextInput
+        autoComplete="username"
+        label="synapseadmin.auth.user_id"
+        resettable
+        source="user_id"
+        sx={inputSx}
+        validate={validateUserId}
+      />
+      <PasswordInput
+        autoComplete="current-password"
+        label="ra.auth.password"
+        resettable
+        source="password"
+        sx={inputSx}
+        validate={required()}
+      />
       {discoveryError ? (
-        <Typography className="meta" color="error">
+        <Typography color="error" sx={metaTextSx}>
           {discoveryError}
         </Typography>
       ) : null}
       {baseUrl && isValidBaseUrl(baseUrl) ? (
-        <Typography className="meta">{translate("synapseadmin.auth.base_url")}: {baseUrl}</Typography>
+        <Typography sx={metaTextSx}>
+          {translate("synapseadmin.auth.base_url")}: {baseUrl}
+        </Typography>
       ) : null}
     </>
   );
@@ -214,39 +255,64 @@ const LoginPage = () => {
 
   return (
     <Form defaultValues={defaultValues} mode="onTouched" onSubmit={handleSubmit}>
-      <FormBox>
-        <Card className="card">
-          <Box className="avatar">
-            {loading ? (
-              <CircularProgress size={25} thickness={2} />
-            ) : (
-              <Avatar className="icon">
-                <LockIcon />
+      <LoginShell>
+        <LoginCard>
+          <Box sx={{ p: { sm: 4, xs: 3 } }}>
+            <Box sx={{ alignItems: "center", display: "flex", gap: 1.5, mb: 1.75 }}>
+              <Avatar
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  color: "black",
+                  height: 42,
+                  width: 42,
+                }}
+              >
+                <LockIcon fontSize="small" />
               </Avatar>
-            )}
-          </Box>
-          <Box className="hint">{translate("synapseadmin.auth.welcome")}</Box>
-          <Box className="form">
+              <Box>
+                <Typography variant="h5">Matrix Admin</Typography>
+                <Typography color="text.secondary" variant="body2">
+                  {translate("synapseadmin.auth.welcome")}
+                </Typography>
+              </Box>
+            </Box>
+
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
+                <CircularProgress size={24} thickness={3} />
+              </Box>
+            ) : null}
+
             <LoginMetadata onDiscovery={setDiscovery} />
-            <Typography className="meta">Server version: {discovery?.serverVersion ?? "-"}</Typography>
-            <Typography className="meta">Matrix specs: {discovery?.matrixVersions.join(", ") || "-"}</Typography>
-            <CardActions className="actions">
-              <Button disabled={loading || discovery?.supportsPassword === false} fullWidth type="submit" variant="contained">
+
+            <Divider sx={{ my: 2 }} />
+
+            <Stack spacing={0.35} sx={{ mb: 2 }}>
+              <Typography sx={metaTextSx}>Server version: {discovery?.serverVersion ?? "-"}</Typography>
+              <Typography sx={metaTextSx}>Matrix specs: {discovery?.matrixVersions.join(", ") || "-"}</Typography>
+            </Stack>
+
+            <Stack spacing={1.2}>
+              <Button
+                disabled={loading || discovery?.supportsPassword === false}
+                fullWidth
+                type="submit"
+                variant="contained"
+              >
                 {translate("ra.auth.sign_in")}
               </Button>
               <Button
-                color="secondary"
                 disabled={loading || !discovery?.supportsSso}
                 fullWidth
                 onClick={handleSso}
-                variant="contained"
+                variant="outlined"
               >
                 {translate("synapseadmin.auth.sso_sign_in")}
               </Button>
-            </CardActions>
+            </Stack>
           </Box>
-        </Card>
-      </FormBox>
+        </LoginCard>
+      </LoginShell>
       <Notification />
     </Form>
   );
