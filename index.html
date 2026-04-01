@@ -128,5 +128,9 @@
       </a>
     </footer>
   </body>
-  <script>document.getElementById("version").textContent = __SYNAPSE_ADMIN_VERSION__</script>
+  <script>
+    const versionText =
+      typeof __SYNAPSE_ADMIN_VERSION__ !== "undefined" ? __SYNAPSE_ADMIN_VERSION__ : "dev";
+    document.getElementById("version").textContent = versionText;
+  </script>
 </html>

@@ -42,6 +42,10 @@ const authProvider: AuthProvider = {
       await apiRequest("/api/auth/logout", {
         method: "POST",
       });
+    } catch (error) {
+      if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
+        throw error;
+      }
     } finally {
       clearSessionState();
     }
