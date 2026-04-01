@@ -60,20 +60,33 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: ci
-    if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      secrets.DOCKERHUB_TOKEN != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
+    outputs:
+      enabled: ${{ steps.guard.outputs.enabled }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check publish prerequisites
+        id: guard
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Docker Hub token is not configured. Skipping publish."
+          fi
+
       - name: Log in to Docker Hub
+        if: steps.guard.outputs.enabled == 'true'
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "yuchanshin" --password-stdin
 
       - name: Build image
+        if: steps.guard.outputs.enabled == 'true'
         run: |
           docker build \
             --tag "docker.io/${{ needs.ci.outputs.image_name }}:${{ needs.ci.outputs.image_tag }}" \
@@ -81,6 +94,7 @@ jobs:
             .
 
       - name: Push image
+        if: steps.guard.outputs.enabled == 'true'
         run: |
           docker push "docker.io/${{ needs.ci.outputs.image_name }}:${{ needs.ci.outputs.image_tag }}"
           docker push "docker.io/${{ needs.ci.outputs.image_name }}:latest"
@@ -93,22 +107,37 @@ jobs:
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      secrets.DEPLOY_HOST != '' &&
-      secrets.DEPLOY_USER != '' &&
-      secrets.DEPLOY_SSH_KEY != '' &&
-      secrets.DEPLOY_KNOWN_HOSTS != '' &&
-      secrets.DEPLOY_PATH != '' &&
-      secrets.PROD_ENV_FILE != '' &&
-      secrets.DOCKERHUB_TOKEN != ''
+      needs.publish.outputs.enabled == 'true'
     environment:
       name: production
     permissions:
       contents: read
+    outputs:
+      enabled: ${{ steps.guard.outputs.enabled }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check deploy prerequisites
+        id: guard
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] && [ -n "$DEPLOY_SSH_KEY" ] && [ -n "$DEPLOY_KNOWN_HOSTS" ] && [ -n "$DEPLOY_PATH" ] && [ -n "$PROD_ENV_FILE" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "One or more deploy secrets are missing. Skipping deploy."
+          fi
+
       - name: Set up SSH
+        if: steps.guard.outputs.enabled == 'true'
         env:
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -120,6 +149,7 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
       - name: Prepare deploy bundle
+        if: steps.guard.outputs.enabled == 'true'
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
         run: |
@@ -128,6 +158,7 @@ jobs:
           printf '%s\n' "$PROD_ENV_FILE" > .deploy/.env
 
       - name: Upload deploy files
+        if: steps.guard.outputs.enabled == 'true'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
@@ -139,6 +170,7 @@ jobs:
           scp -i ~/.ssh/id_ed25519 -P "$DEPLOY_PORT" .deploy/docker-compose.yml .deploy/.env "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
       - name: Pull and restart stack
+        if: steps.guard.outputs.enabled == 'true'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
