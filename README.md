@@ -33,13 +33,42 @@ docker run --rm -p 8787:8787 --env-file .env matrix-admin
 
 The container serves the Vite build and the Hono server together on `8787`.
 
+## Docker Compose
+
+Production compose file: [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml)
+
+```bash
+# Prepare deploy bundle (same shape as CI deploy)
+mkdir -p .deploy
+cp deploy/docker-compose.prod.yml .deploy/docker-compose.yml
+cp deploy/.env.production.example .deploy/.env
+```
+
+Update `.deploy/.env` with your real production values (especially `PUBLIC_BASE_URL` and `SESSION_SECRET`), then run:
+
+```bash
+cd .deploy
+IMAGE_NAME=yuchanshin/matrix-admin IMAGE_TAG=latest docker compose up -d
+```
+
+Useful operations:
+
+```bash
+cd .deploy
+IMAGE_NAME=yuchanshin/matrix-admin IMAGE_TAG=latest docker compose pull
+IMAGE_NAME=yuchanshin/matrix-admin IMAGE_TAG=latest docker compose up -d --remove-orphans
+docker compose logs -f
+docker compose down
+```
+
 ## CI/CD
 
 GitHub Actions workflow: [`.github/workflows/docker-cicd.yml`](.github/workflows/docker-cicd.yml)
 
 - Every PR and push runs `pnpm typecheck`, `pnpm test`, `pnpm build`, and `docker build`
-- A push to `main` publishes `docker.io/yuchanshin/matrix-admin:latest` and `docker.io/yuchanshin/matrix-admin:sha-<commit>` when Docker Hub secrets are configured
-- If deploy secrets are configured, the same `main` push uploads [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) to the server and redeploys with Docker Compose
+- A published GitHub Release pushes `docker.io/yuchanshin/matrix-admin:<release-tag>` and `docker.io/yuchanshin/matrix-admin:latest`
+- A push to `main` pushes `docker.io/yuchanshin/matrix-admin:test-<UTC timestamp>` and `docker.io/yuchanshin/matrix-admin:test-latest`
+- If deploy secrets are configured, the same `main` push uploads [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) to the server and redeploys with `test-latest`
 
 ### Required GitHub secrets for CD
 
