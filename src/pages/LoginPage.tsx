@@ -18,7 +18,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import type { DiscoveryResult } from "@shared/matrix";
 
 import storage from "../storage";
-import { discoverHomeserver, getWellKnownUrl, isValidBaseUrl, splitMxid } from "../synapse/synapse";
+import { discoverHomeserver, isValidBaseUrl, isValidMxidLocalpart } from "../synapse/synapse";
 
 const LoginShell = styled(Box)(({ theme }) => ({
   alignItems: "center",
@@ -91,7 +91,6 @@ const metaTextSx = {
 const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult | null) => void }) => {
   const form = useFormContext();
   const translate = useTranslate();
-  const userId = useWatch({ control: form.control, name: "user_id" });
   const baseUrl = useWatch({ control: form.control, name: "base_url" });
   const [discoveryError, setDiscoveryError] = useState<string>("");
   const validateBaseUrl = [
@@ -111,7 +110,7 @@ const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult 
         return undefined;
       }
 
-      return splitMxid(value) ? undefined : translate("synapseadmin.auth.username_error");
+      return isValidMxidLocalpart(value) ? undefined : translate("synapseadmin.auth.username_error");
     },
   ];
 
@@ -145,36 +144,6 @@ const LoginMetadata = ({ onDiscovery }: { onDiscovery: (result: DiscoveryResult 
       active = false;
     };
   }, [baseUrl, onDiscovery]);
-
-  useEffect(() => {
-    let active = true;
-
-    const fillBaseUrlFromMxid = async () => {
-      if (baseUrl) {
-        return;
-      }
-
-      const domain = splitMxid(userId)?.domain;
-      if (!domain) {
-        return;
-      }
-
-      try {
-        const discoveredBaseUrl = await getWellKnownUrl(domain);
-        if (active) {
-          form.setValue("base_url", discoveredBaseUrl, { shouldTouch: true });
-        }
-      } catch {
-        return;
-      }
-    };
-
-    void fillBaseUrlFromMxid();
-
-    return () => {
-      active = false;
-    };
-  }, [baseUrl, form, userId]);
 
   return (
     <>

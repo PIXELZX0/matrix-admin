@@ -11,7 +11,7 @@ const en: SynapseTranslationMessages = {
       welcome: "Welcome to Matrix-Admin",
       server_version: "Synapse version",
       supports_specs: "supports Matrix specs",
-      username_error: "Please enter fully qualified user ID: '@user:domain'",
+      username_error: "Please enter only the Matrix localpart, for example: 'user'",
       protocol_error: "URL has to start with 'http://' or 'https://'",
       url_error: "Not a valid Matrix server URL",
       sso_sign_in: "Sign in with SSO",

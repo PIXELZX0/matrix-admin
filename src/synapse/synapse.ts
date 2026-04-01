@@ -24,6 +24,14 @@ export const splitMxid = (mxid: string | null | undefined): MxidParts | undefine
   };
 };
 
+export const isValidMxidLocalpart = (value: string | null | undefined): boolean => {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  return /^[a-zA-Z0-9._=\-/]+$/.test(value);
+};
+
 export const isValidBaseUrl = (value: unknown): value is string => {
   if (typeof value !== "string") {
     return false;
