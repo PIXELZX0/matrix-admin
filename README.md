@@ -94,8 +94,8 @@ The production compose file binds the app to `127.0.0.1:${APP_PORT}` by default 
 - `SESSION_SECRET`
 - `PUBLIC_BASE_URL`
 - `ACCESS_GATE_MODE`
-- `ACCESS_GATE_HEADER_NAME`
 - `ALLOW_PRIVATE_TARGETS`
 - `SESSION_TTL_HOURS`
 
 In production, `ACCESS_GATE_MODE=trusted-header` is required. Direct public exposure without an external access gate is intentionally blocked.
+`ACCESS_GATE_HEADER_NAME` defaults to `x-authenticated-user-email` when omitted, but setting it explicitly is recommended to match your reverse proxy/auth gateway setup.

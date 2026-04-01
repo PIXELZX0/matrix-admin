@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 export type AccessGateMode = "disabled" | "trusted-header";
+const defaultAccessGateHeaderName = "x-authenticated-user-email";
 
 const toBoolean = (value: string | undefined, fallback: boolean) => {
   if (typeof value !== "string") {
@@ -17,17 +18,20 @@ const toNumber = (value: string | undefined, fallback: number) => {
 
 const nodeEnv = process.env.NODE_ENV ?? "development";
 const accessGateMode = (process.env.ACCESS_GATE_MODE ?? (nodeEnv === "production" ? "trusted-header" : "disabled")) as AccessGateMode;
+const accessGateHeaderName = process.env.ACCESS_GATE_HEADER_NAME?.trim() || defaultAccessGateHeaderName;
 
 if (nodeEnv === "production" && accessGateMode !== "trusted-header") {
   throw new Error("Production requires ACCESS_GATE_MODE=trusted-header. Direct public exposure is unsupported.");
 }
 
-if (nodeEnv === "production" && !process.env.ACCESS_GATE_HEADER_NAME) {
-  throw new Error("Production requires ACCESS_GATE_HEADER_NAME when ACCESS_GATE_MODE=trusted-header.");
+if (nodeEnv === "production" && accessGateMode === "trusted-header" && !process.env.ACCESS_GATE_HEADER_NAME?.trim()) {
+  console.warn(
+    `Production is missing ACCESS_GATE_HEADER_NAME. Falling back to "${defaultAccessGateHeaderName}".`,
+  );
 }
 
 export const env = {
-  ACCESS_GATE_HEADER_NAME: process.env.ACCESS_GATE_HEADER_NAME ?? "x-authenticated-user-email",
+  ACCESS_GATE_HEADER_NAME: accessGateHeaderName,
   ACCESS_GATE_MODE: accessGateMode,
   ALLOW_PRIVATE_TARGETS: toBoolean(process.env.ALLOW_PRIVATE_TARGETS, true),
   COOKIE_NAME: "matrix_admin_session",
