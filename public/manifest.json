@@ -1,6 +1,6 @@
 {
-  "short_name": "Synapse-Admin",
-  "name": "Synapse-Admin",
+  "short_name": "Matrix-Admin",
+  "name": "Matrix-Admin",
   "icons": [
     {
       "src": "favicon.ico",
