@@ -13,7 +13,18 @@ const bff = spawn("node", ["dist-server/index.js"], {
 
 const frontend = spawn(
   "node",
-  ["node_modules/vite/bin/vite.js", "preview", "--config", "vite.preview.config.ts", "--host", frontendHost, "--port", frontendPort],
+  [
+    "node_modules/vite/bin/vite.js",
+    "preview",
+    "--config",
+    "vite.preview.config.mjs",
+    "--configLoader",
+    "native",
+    "--host",
+    frontendHost,
+    "--port",
+    frontendPort,
+  ],
   {
     env: { ...childEnv, BFF_PORT: bffPort },
     stdio: "inherit",

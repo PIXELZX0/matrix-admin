@@ -13,7 +13,7 @@
     "build:server": "tsup server/index.ts --format esm --platform node --target node20 --out-dir dist-server --clean",
     "start": "node scripts/start-prod.mjs",
     "start:bff": "node dist-server/index.js",
-    "start:frontend": "node node_modules/vite/bin/vite.js preview --config vite.preview.config.ts",
+    "start:frontend": "node node_modules/vite/bin/vite.js preview --config vite.preview.config.mjs --configLoader native",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",

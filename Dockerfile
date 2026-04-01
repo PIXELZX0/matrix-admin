@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 COPY index.html ./
 COPY tsconfig.json tsconfig.eslint.json tsconfig.vite.json ./
 COPY vite.config.ts ./
-COPY vite.preview.config.ts ./
+COPY vite.preview.config.mjs ./
 COPY public ./public
 COPY scripts ./scripts
 COPY server ./server
@@ -39,7 +39,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/dist-server ./dist-server
 COPY --from=build /app/scripts ./scripts
-COPY --from=build /app/vite.preview.config.ts ./vite.preview.config.ts
+COPY --from=build /app/vite.preview.config.mjs ./vite.preview.config.mjs
 
 USER node
 
