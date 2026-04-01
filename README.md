@@ -38,7 +38,7 @@ The container serves the Vite build and the Hono server together on `8787`.
 GitHub Actions workflow: [`.github/workflows/docker-cicd.yml`](.github/workflows/docker-cicd.yml)
 
 - Every PR and push runs `pnpm typecheck`, `pnpm test`, `pnpm build`, and `docker build`
-- A push to `main` also publishes `ghcr.io/<owner>/<repo>:latest` and `ghcr.io/<owner>/<repo>:sha-<commit>`
+- A push to `main` publishes `docker.io/yuchanshin/matrix-admin:latest` and `docker.io/yuchanshin/matrix-admin:sha-<commit>` when Docker Hub secrets are configured
 - If deploy secrets are configured, the same `main` push uploads [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) to the server and redeploys with Docker Compose
 
 ### Required GitHub secrets for CD
@@ -49,8 +49,7 @@ GitHub Actions workflow: [`.github/workflows/docker-cicd.yml`](.github/workflows
 - `DEPLOY_SSH_KEY`
 - `DEPLOY_KNOWN_HOSTS`
 - `DEPLOY_PATH`
-- `GHCR_USERNAME`
-- `GHCR_TOKEN`
+- `DOCKERHUB_TOKEN`
 - `PROD_ENV_FILE`
 
 `PROD_ENV_FILE` should contain the contents of your production `.env`. You can start from [`deploy/.env.production.example`](deploy/.env.production.example).
