@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("environment config", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.resetModules();
   });
@@ -13,23 +12,26 @@ describe("environment config", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("ACCESS_GATE_MODE", "trusted-header");
     vi.stubEnv("ACCESS_GATE_HEADER_NAME", "");
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const { env } = await import("./env");
 
     expect(env.ACCESS_GATE_HEADER_NAME).toBe("x-authenticated-user-email");
-    expect(warn).toHaveBeenCalledWith(
-      'Production is missing ACCESS_GATE_HEADER_NAME. Falling back to "x-authenticated-user-email".',
-    );
   });
 
-  it("rejects production when access-gate mode is not trusted-header", async () => {
+  it("defaults access-gate mode to disabled in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("ACCESS_GATE_MODE", "disabled");
-    vi.stubEnv("ACCESS_GATE_HEADER_NAME", "x-authenticated-user-email");
 
-    await expect(import("./env")).rejects.toThrow(
-      "Production requires ACCESS_GATE_MODE=trusted-header. Direct public exposure is unsupported.",
-    );
+    const { env } = await import("./env");
+
+    expect(env.ACCESS_GATE_MODE).toBe("disabled");
+  });
+
+  it("keeps trusted-header mode when explicitly configured", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ACCESS_GATE_MODE", "trusted-header");
+
+    const { env } = await import("./env");
+
+    expect(env.ACCESS_GATE_MODE).toBe("trusted-header");
   });
 });

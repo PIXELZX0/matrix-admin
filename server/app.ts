@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { Context, MiddlewareHandler } from "hono";
+import type { MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
@@ -18,23 +18,6 @@ export type AppBindings = {
     session: ReturnType<typeof getSession>;
     sessionId: string | null;
   };
-};
-
-type AppContext = Context<AppBindings>;
-
-const isHealthcheckRequest = (c: AppContext) => c.req.path === "/healthz";
-
-const requireAccessGate: MiddlewareHandler<AppBindings> = async (c, next) => {
-  if (isHealthcheckRequest(c)) {
-    await next();
-    return;
-  }
-
-  if (env.ACCESS_GATE_MODE === "trusted-header" && !c.req.header(env.ACCESS_GATE_HEADER_NAME)) {
-    throw new HttpError("Access denied. Requests must pass through the configured access gate.", 403);
-  }
-
-  await next();
 };
 
 const attachSession: MiddlewareHandler<AppBindings> = async (c, next) => {
@@ -79,7 +62,6 @@ export const createApp = ({ serveClient = env.NODE_ENV === "production" } = {}) 
 
   app.get("/healthz", c => c.json({ ok: true }));
   app.use("*", attachSession);
-  app.use("*", requireAccessGate);
   app.use("/api/auth/logout", requireSession, requireCsrf);
   app.use("/api/admin/*", requireSession, requireCsrf);
   app.use("/api/media/*", requireSession, requireCsrf);

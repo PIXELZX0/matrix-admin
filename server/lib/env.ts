@@ -16,19 +16,13 @@ const toNumber = (value: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toAccessGateMode = (value: string | undefined): AccessGateMode => (
+  value === "trusted-header" ? "trusted-header" : "disabled"
+);
+
 const nodeEnv = process.env.NODE_ENV ?? "development";
-const accessGateMode = (process.env.ACCESS_GATE_MODE ?? (nodeEnv === "production" ? "trusted-header" : "disabled")) as AccessGateMode;
+const accessGateMode = toAccessGateMode(process.env.ACCESS_GATE_MODE);
 const accessGateHeaderName = process.env.ACCESS_GATE_HEADER_NAME?.trim() || defaultAccessGateHeaderName;
-
-if (nodeEnv === "production" && accessGateMode !== "trusted-header") {
-  throw new Error("Production requires ACCESS_GATE_MODE=trusted-header. Direct public exposure is unsupported.");
-}
-
-if (nodeEnv === "production" && accessGateMode === "trusted-header" && !process.env.ACCESS_GATE_HEADER_NAME?.trim()) {
-  console.warn(
-    `Production is missing ACCESS_GATE_HEADER_NAME. Falling back to "${defaultAccessGateHeaderName}".`,
-  );
-}
 
 export const env = {
   ACCESS_GATE_HEADER_NAME: accessGateHeaderName,
