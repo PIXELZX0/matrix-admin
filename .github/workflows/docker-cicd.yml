@@ -1,0 +1,154 @@
+name: Docker CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: docker-cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image_name: ${{ steps.image.outputs.image_name }}
+      image_tag: ${{ steps.image.outputs.image_tag }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare image metadata
+        id: image
+        run: |
+          IMAGE_NAME="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Verify Docker image build
+        run: docker build --tag "${REGISTRY}/${{ steps.image.outputs.image_name }}:${{ steps.image.outputs.image_tag }}" .
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: |
+          docker build \
+            --tag "${REGISTRY}/${{ needs.ci.outputs.image_name }}:${{ needs.ci.outputs.image_tag }}" \
+            --tag "${REGISTRY}/${{ needs.ci.outputs.image_name }}:latest" \
+            .
+
+      - name: Push image
+        run: |
+          docker push "${REGISTRY}/${{ needs.ci.outputs.image_name }}:${{ needs.ci.outputs.image_tag }}"
+          docker push "${REGISTRY}/${{ needs.ci.outputs.image_name }}:latest"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - ci
+      - publish
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      secrets.DEPLOY_HOST != '' &&
+      secrets.DEPLOY_USER != '' &&
+      secrets.DEPLOY_SSH_KEY != '' &&
+      secrets.DEPLOY_KNOWN_HOSTS != '' &&
+      secrets.DEPLOY_PATH != '' &&
+      secrets.PROD_ENV_FILE != '' &&
+      secrets.GHCR_USERNAME != '' &&
+      secrets.GHCR_TOKEN != ''
+    environment:
+      name: production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        env:
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Prepare deploy bundle
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          mkdir -p .deploy
+          cp deploy/docker-compose.prod.yml .deploy/docker-compose.yml
+          printf '%s\n' "$PROD_ENV_FILE" > .deploy/.env
+
+      - name: Upload deploy files
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          DEPLOY_PORT="${DEPLOY_PORT:-22}"
+          ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
+          scp -i ~/.ssh/id_ed25519 -P "$DEPLOY_PORT" .deploy/docker-compose.yml .deploy/.env "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      - name: Pull and restart stack
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          IMAGE_NAME: ${{ needs.ci.outputs.image_name }}
+          IMAGE_TAG: ${{ needs.ci.outputs.image_tag }}
+        run: |
+          DEPLOY_PORT="${DEPLOY_PORT:-22}"
+          printf '%s\n' "$GHCR_TOKEN" | ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
+          ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && IMAGE_NAME='$IMAGE_NAME' IMAGE_TAG='$IMAGE_TAG' docker compose pull && IMAGE_NAME='$IMAGE_NAME' IMAGE_TAG='$IMAGE_TAG' docker compose up -d --remove-orphans"

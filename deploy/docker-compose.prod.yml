@@ -1,0 +1,12 @@
+services:
+  matrix-admin:
+    image: ${IMAGE_NAME:?Set IMAGE_NAME}:${IMAGE_TAG:-latest}
+    container_name: matrix-admin
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-8787}
+    ports:
+      - 127.0.0.1:${APP_PORT:-8787}:8787

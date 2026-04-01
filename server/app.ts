@@ -22,7 +22,14 @@ export type AppBindings = {
 
 type AppContext = Context<AppBindings>;
 
+const isHealthcheckRequest = (c: AppContext) => c.req.path === "/healthz";
+
 const requireAccessGate: MiddlewareHandler<AppBindings> = async (c, next) => {
+  if (isHealthcheckRequest(c)) {
+    await next();
+    return;
+  }
+
   if (env.ACCESS_GATE_MODE === "trusted-header" && !c.req.header(env.ACCESS_GATE_HEADER_NAME)) {
     throw new HttpError("Access denied. Requests must pass through the configured access gate.", 403);
   }
@@ -70,6 +77,7 @@ const requireCsrf: MiddlewareHandler<AppBindings> = async (c, next) => {
 export const createApp = ({ serveClient = env.NODE_ENV === "production" } = {}) => {
   const app = new Hono<AppBindings>();
 
+  app.get("/healthz", c => c.json({ ok: true }));
   app.use("*", attachSession);
   app.use("*", requireAccessGate);
   app.use("/api/auth/logout", requireSession, requireCsrf);
