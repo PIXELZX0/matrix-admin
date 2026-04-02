@@ -104,6 +104,15 @@ The production compose file binds the frontend to `127.0.0.1:${APP_PORT}` by def
 - `ALLOW_PRIVATE_TARGETS`
 - `SESSION_TTL_HOURS`
 
+## Authentication required troubleshooting
+
+If login succeeds but later API calls return `Authentication required.`, check cookie security settings:
+
+- For HTTPS deployments: set `PUBLIC_BASE_URL=https://...` and keep `COOKIE_SECURE=true`
+- For HTTP-only environments: set `COOKIE_SECURE=false`
+
+By default, `COOKIE_SECURE` is inferred from `PUBLIC_BASE_URL` protocol.
+
 ## Optional runtime ports
 
 - `FRONTEND_PORT` (default: `5173`) - exposed Vite frontend port

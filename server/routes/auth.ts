@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { DiscoveryResult, SessionView } from "@shared/matrix";
 
-import { env, isProduction } from "../lib/env";
+import { env } from "../lib/env";
 import { HttpError } from "../lib/http-error";
 import { buildSsoRedirectUrl, discoverHomeserver, loginWithPassword, loginWithToken, logoutFromHomeserver, resolveWellKnownBaseUrl } from "../lib/matrix-client";
 import {
@@ -51,7 +51,7 @@ const setSessionCookie = (cookieStore: { header: (name: string, value: string, o
     maxAge: env.SESSION_TTL_HOURS * 60 * 60,
     path: "/",
     sameSite: "Lax",
-    secure: isProduction,
+    secure: env.COOKIE_SECURE,
   });
 };
 
@@ -155,7 +155,7 @@ authRoutes.post("/logout", async c => {
   destroySession(sessionId);
   deleteCookie(c, env.COOKIE_NAME, {
     path: "/",
-    secure: isProduction,
+    secure: env.COOKIE_SECURE,
   });
 
   return c.json({ ok: true });

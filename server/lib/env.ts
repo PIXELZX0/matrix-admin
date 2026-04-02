@@ -23,18 +23,27 @@ const toAccessGateMode = (value: string | undefined): AccessGateMode => (
 const nodeEnv = process.env.NODE_ENV ?? "development";
 const accessGateMode = toAccessGateMode(process.env.ACCESS_GATE_MODE);
 const accessGateHeaderName = process.env.ACCESS_GATE_HEADER_NAME?.trim() || defaultAccessGateHeaderName;
+const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? "http://localhost:5173";
+const inferCookieSecureDefault = (value: string) => {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 export const env = {
   ACCESS_GATE_HEADER_NAME: accessGateHeaderName,
   ACCESS_GATE_MODE: accessGateMode,
   ALLOW_PRIVATE_TARGETS: toBoolean(process.env.ALLOW_PRIVATE_TARGETS, true),
   COOKIE_NAME: "matrix_admin_session",
+  COOKIE_SECURE: toBoolean(process.env.COOKIE_SECURE, inferCookieSecureDefault(publicBaseUrl)),
   HOST: process.env.HOST ?? "127.0.0.1",
   MAX_JSON_BYTES: toNumber(process.env.MAX_JSON_BYTES, 2 * 1024 * 1024),
   MAX_MEDIA_BYTES: toNumber(process.env.MAX_MEDIA_BYTES, 50 * 1024 * 1024),
   NODE_ENV: nodeEnv,
   PORT: toNumber(process.env.PORT, 8787),
-  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL ?? "http://localhost:5173",
+  PUBLIC_BASE_URL: publicBaseUrl,
   SESSION_SECRET: process.env.SESSION_SECRET ?? randomBytes(32).toString("hex"),
   SESSION_TTL_HOURS: toNumber(process.env.SESSION_TTL_HOURS, 12),
   UPSTREAM_TIMEOUT_MS: toNumber(process.env.UPSTREAM_TIMEOUT_MS, 10_000),
