@@ -28,6 +28,19 @@ const loginSchema = z.object({
   username: z.string().min(1),
 });
 
+const resolveCookieSecure = (context: { req: { header: (name: string) => string | undefined; url: string } }) => {
+  if (env.COOKIE_SECURE !== "auto") {
+    return env.COOKIE_SECURE;
+  }
+
+  const forwardedProto = context.req.header("x-forwarded-proto");
+  if (typeof forwardedProto === "string" && forwardedProto.length > 0) {
+    return forwardedProto.split(",")[0]?.trim().toLowerCase() === "https";
+  }
+
+  return context.req.url.startsWith("https://");
+};
+
 const getSessionView = (session: SessionRecord | null): SessionView => {
   if (!session) {
     return { authenticated: false };
@@ -45,13 +58,16 @@ const getSessionView = (session: SessionRecord | null): SessionView => {
   };
 };
 
-const setSessionCookie = (cookieStore: { header: (name: string, value: string, options?: Record<string, unknown>) => void }, session: SessionRecord) => {
-  setCookie(cookieStore as never, env.COOKIE_NAME, createSignedSessionValue(session.id), {
+const setSessionCookie = (
+  context: { header: (name: string, value: string, options?: Record<string, unknown>) => void; req: { header: (name: string) => string | undefined; url: string } },
+  session: SessionRecord
+) => {
+  setCookie(context as never, env.COOKIE_NAME, createSignedSessionValue(session.id), {
     httpOnly: true,
     maxAge: env.SESSION_TTL_HOURS * 60 * 60,
     path: "/",
     sameSite: "Lax",
-    secure: env.COOKIE_SECURE,
+    secure: resolveCookieSecure(context),
   });
 };
 
@@ -155,7 +171,7 @@ authRoutes.post("/logout", async c => {
   destroySession(sessionId);
   deleteCookie(c, env.COOKIE_NAME, {
     path: "/",
-    secure: env.COOKIE_SECURE,
+    secure: resolveCookieSecure(c),
   });
 
   return c.json({ ok: true });

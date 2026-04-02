@@ -108,10 +108,11 @@ The production compose file binds the frontend to `127.0.0.1:${APP_PORT}` by def
 
 If login succeeds but later API calls return `Authentication required.`, check cookie security settings:
 
-- For HTTPS deployments: set `PUBLIC_BASE_URL=https://...` and keep `COOKIE_SECURE=true`
-- For HTTP-only environments: set `COOKIE_SECURE=false`
+- Recommended: `COOKIE_SECURE=auto` (default). The app uses `x-forwarded-proto` or request URL scheme.
+- Force HTTPS-only cookies: `COOKIE_SECURE=true`
+- Force HTTP-compatible cookies (local/test only): `COOKIE_SECURE=false`
 
-By default, `COOKIE_SECURE` is inferred from `PUBLIC_BASE_URL` protocol.
+If your reverse proxy terminates TLS, make sure it forwards `x-forwarded-proto`.
 
 ## Optional runtime ports
 

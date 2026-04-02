@@ -41,20 +41,25 @@ describe("environment config", () => {
     expect(env.HOST).toBe("127.0.0.1");
   });
 
-  it("infers secure cookies from an https public base url", async () => {
-    vi.stubEnv("PUBLIC_BASE_URL", "https://admin.example.com");
-
+  it("defaults cookie security mode to auto", async () => {
     const { env } = await import("./env");
 
-    expect(env.COOKIE_SECURE).toBe(true);
+    expect(env.COOKIE_SECURE).toBe("auto");
   });
 
-  it("allows overriding cookie security explicitly", async () => {
-    vi.stubEnv("PUBLIC_BASE_URL", "https://admin.example.com");
+  it("allows overriding cookie security to false", async () => {
     vi.stubEnv("COOKIE_SECURE", "false");
 
     const { env } = await import("./env");
 
     expect(env.COOKIE_SECURE).toBe(false);
+  });
+
+  it("allows overriding cookie security to true", async () => {
+    vi.stubEnv("COOKIE_SECURE", "true");
+
+    const { env } = await import("./env");
+
+    expect(env.COOKIE_SECURE).toBe(true);
   });
 });

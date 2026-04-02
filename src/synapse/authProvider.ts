@@ -51,7 +51,7 @@ const authProvider: AuthProvider = {
     }
   },
   checkError: ({ status }: { status: number }) => {
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       clearSessionState();
       return Promise.reject();
     }
