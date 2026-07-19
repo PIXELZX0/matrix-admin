@@ -225,13 +225,13 @@ export const resolveWellKnownBaseUrl = async (domain: string) => {
     return fallback;
   }
 
-  const json = (await parseJson(response)) as {
+  const json = (await parseJson(response).catch(() => null)) as {
     "m.homeserver"?: {
       base_url?: string;
     };
-  };
+  } | null;
 
-  const configuredBaseUrl = json["m.homeserver"]?.base_url;
+  const configuredBaseUrl = json?.["m.homeserver"]?.base_url;
   return typeof configuredBaseUrl === "string" ? normalizeBaseUrl(configuredBaseUrl) : fallback;
 };
 
