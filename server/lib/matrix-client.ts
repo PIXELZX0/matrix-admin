@@ -26,7 +26,15 @@ const parseJson = async (response: Response) => {
     throw new HttpError("Upstream JSON response exceeded the allowed size.", 502);
   }
 
-  return text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    throw new HttpError("Upstream server returned a non-JSON response.", 502);
+  }
 };
 
 const fetchMatrix = async (
