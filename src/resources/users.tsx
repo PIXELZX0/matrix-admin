@@ -227,7 +227,7 @@ export const UserEdit = (props: EditProps) => {
 
         <FormTab label={translate("resources.devices.name", { smart_count: 2 })} icon={<DevicesIcon />} path="devices">
           <ReferenceManyField reference="devices" target="user_id" label={false}>
-            <DataTable>
+            <DataTable bulkActionButtons={false}>
               <DataTable.Col source="device_id" />
               <DataTable.Col source="display_name" />
               <DataTable.Col source="last_seen_ip" />
